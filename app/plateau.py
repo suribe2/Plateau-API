@@ -33,14 +33,18 @@ def detect_plateaus():
 
     # 5. Streak counter: 3 weeks in a row with no improvement = plateau
     plateau_flags = []
-    for exercise in top_sets["exercise_title"].unique():
-        subset = top_sets[top_sets["exercise_title"] == exercise]
+
+    for exercise_title in top_sets["exercise_title"].unique():
+        subset = top_sets[top_sets["exercise_title"] == exercise_title]
         streak = 0
-        for improved_value in subset["improved"]:
-            if improved_value:
+        for improved_value, prev_w in zip(subset["improved"], subset["prev_weight"]):
+            if pd.isna(prev_w):
+                streak = 0
+            elif improved_value:
                 streak = 0
             else:
                 streak += 1
+
             plateau_flags.append(streak >= 3)
 
     top_sets["plateau"] = plateau_flags
@@ -48,5 +52,6 @@ def detect_plateaus():
     return top_sets
 
 
+    
 if __name__ == "__main__":
     print(detect_plateaus()[["exercise_title", "week", "improved", "plateau"]])
