@@ -13,3 +13,41 @@ CHUNKS = [
         "source": "Sleep Foundation, article on sleep, athletic performance and recovery (sleepfoundation.org/articles/sleep-athletic-performance-and-recovery)",
     },
 ]
+
+
+from dotenv import load_dotenv
+from openai import OpenAI
+from app.database import SessionLocal
+from app.models import KnowledgeChunk
+
+load_dotenv()
+client = OpenAI()
+
+
+def embed(text):
+    response = client.embeddings.create(model="text-embedding-3-small", input=text)
+    return response.data[0].embedding
+
+
+def seed():
+    session = SessionLocal()
+
+    # wipe old rows first so running this twice never creates duplicates
+    session.query(KnowledgeChunk).delete()
+
+    for chunk in CHUNKS:
+        row = KnowledgeChunk(
+            topic=chunk["topic"],
+            content=chunk["content"],
+            source=chunk["source"],
+            embedding=embed(chunk["content"]),
+        )
+        session.add(row)
+
+    session.commit()
+    session.close()
+    print(f"Seeded {len(CHUNKS)} passages.")
+
+
+if __name__ == "__main__":
+    seed()
